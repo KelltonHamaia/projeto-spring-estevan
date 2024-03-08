@@ -43,7 +43,7 @@ public class ProdutoController {
         product.setEstoque(novoEstoque);
 
         produtoRepository.save(product);
-        return "success" + new Date().toString();
+        return "success";
     }
 
     @GetMapping(path = "/lastupdated")
@@ -53,7 +53,6 @@ public class ProdutoController {
 
         Iterable<Product> products = produtoRepository.findAll();
 
-        // meio gambiarrento sei la
         products.forEach(product ->  {
             if(product.getUpdated_at().getDayOfMonth() + 1 == today.getDayOfMonth())  {
                 lastUpdatedProducts.add(product);
