@@ -3,10 +3,13 @@ package com.example.demo.controller;
 import com.example.demo.model.Product;
 import com.example.demo.repository.ProdutoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
-@Controller
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Date;
+
+@RestController
 @RequestMapping(path = "/products")
 public class ProdutoController {
 
@@ -14,12 +17,12 @@ public class ProdutoController {
     private ProdutoRepository produtoRepository;
 
     @GetMapping(path = "/all")
-    public @ResponseBody Iterable<Product> getAll(){
+    public Iterable<Product> getAll(){
         return produtoRepository.findAll();
     }
 
     @PostMapping(path = "/new")
-    public @ResponseBody String addNewUser(@RequestParam String nome, @RequestParam String desc, @RequestParam int estoque) {
+    public String addNewUser(@RequestParam String nome, @RequestParam String desc, @RequestParam int estoque) {
         Product product = new Product();
         product.setNome(nome);
         product.setDescricao(desc);
@@ -29,4 +32,35 @@ public class ProdutoController {
 
         return "success";
     }
+
+    @PostMapping(path = "/update")
+    public String updateProduct(@RequestParam Long id, @RequestParam int novoEstoque) {
+        Product product = produtoRepository.findProductById(id);
+
+        if(product == null) {
+            return "produto não cadastrado.";
+        }
+        product.setEstoque(novoEstoque);
+
+        produtoRepository.save(product);
+        return "success" + new Date().toString();
+    }
+
+    @GetMapping(path = "/lastupdated")
+    public ArrayList<Product> getLastUpdatedProducts(){
+        LocalDateTime today = LocalDateTime.now();
+        ArrayList<Product> lastUpdatedProducts = new ArrayList<Product>();
+
+        Iterable<Product> products = produtoRepository.findAll();
+
+        // meio gambiarrento sei la
+        products.forEach(product ->  {
+            if(product.getUpdated_at().getDayOfMonth() + 1 == today.getDayOfMonth())  {
+                lastUpdatedProducts.add(product);
+            }
+        });
+
+        return lastUpdatedProducts;
+    }
+
 }
