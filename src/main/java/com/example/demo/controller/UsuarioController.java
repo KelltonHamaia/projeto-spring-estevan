@@ -103,16 +103,8 @@ public class UsuarioController {
 
     @GetMapping(path = "lastloggedusers")
 
-    public ArrayList<User> gatLastLoggedUsers() {
-        ArrayList<User> latestLoggedUsers = new ArrayList<User>();
-        Iterable<User> users = usuarioRepository.findAll();
-
-        users.forEach(user -> {
-            if(user.getLast_login().getDayOfMonth() + 1 == LocalDateTime.now().getDayOfMonth()) {
-                latestLoggedUsers.add(user);
-            }
-        });
-
-        return latestLoggedUsers;
+    public Iterable<User> getLastLoggedUsers() {
+        Date yesterday = new Date(System.currentTimeMillis() - (1000 * 3600 * 24));
+        return usuarioRepository.findByUpdatedAtAfter(yesterday);
     }
 }

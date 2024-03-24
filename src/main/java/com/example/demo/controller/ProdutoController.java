@@ -1,13 +1,14 @@
 package com.example.demo.controller;
 
+import com.example.demo.model.Category;
 import com.example.demo.model.Product;
+import com.example.demo.repository.CategoryRepository;
 import com.example.demo.repository.ProdutoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Date;
+import java.util.Optional;
 
 @RestController
 @RequestMapping(path = "/products")
@@ -16,50 +17,57 @@ public class ProdutoController {
     @Autowired
     private ProdutoRepository produtoRepository;
 
+    @Autowired
+    private CategoryRepository categoryRepository;
+
     @GetMapping(path = "/all")
     public Iterable<Product> getAll(){
         return produtoRepository.findAll();
     }
 
     @PostMapping(path = "/new")
-    public String addNewUser(@RequestParam String nome, @RequestParam String desc, @RequestParam int estoque) {
+    public String addNewProduct(
+            @RequestParam String nome,
+            @RequestParam String desc,
+            @RequestParam int estoque,
+            @RequestParam Long idCategory
+    ) {
         Product product = new Product();
-        product.setNome(nome);
-        product.setDescricao(desc);
-        product.setEstoque(estoque);
+        Optional<Category> category = categoryRepository.findById(idCategory);
 
-        produtoRepository.save(product);
-
-        return "success";
+        if(category.isPresent()) {
+            product.setCategory(category.get());
+            product.setNome(nome);
+            product.setDescricao(desc);
+            product.setEstoque(estoque);
+            produtoRepository.save(product);
+            return "success";
+        } else {
+            return "erro - categoria não encontrada.";
+        }
     }
 
     @PostMapping(path = "/update")
     public String updateProduct(@RequestParam Long id, @RequestParam int novoEstoque) {
-        Product product = produtoRepository.findProductById(id);
+        Optional<Product> product = produtoRepository.findById(id);
 
-        if(product == null) {
-            return "produto não cadastrado.";
+        if (product.isPresent()) {
+            if(novoEstoque < 0) {
+                return "Informe um valor maior que zero.";
+            }
+            product.get().setEstoque(novoEstoque);
+            produtoRepository.save(product.get());
+            return "success";
+        } else  {
+            return "Produto não existe.";
         }
-        product.setEstoque(novoEstoque);
 
-        produtoRepository.save(product);
-        return "success";
     }
 
     @GetMapping(path = "/lastupdated")
-    public ArrayList<Product> getLastUpdatedProducts(){
-        LocalDateTime today = LocalDateTime.now();
-        ArrayList<Product> lastUpdatedProducts = new ArrayList<Product>();
-
-        Iterable<Product> products = produtoRepository.findAll();
-
-        products.forEach(product ->  {
-            if(product.getUpdated_at().getDayOfMonth() + 1 == today.getDayOfMonth())  {
-                lastUpdatedProducts.add(product);
-            }
-        });
-
-        return lastUpdatedProducts;
+    public Iterable<Product> getLastUpdatedProducts(){
+        Date yesterday = new Date(System.currentTimeMillis() - (1000 * 3600 * 24));
+        return produtoRepository.findByUpdatedAtAfter(yesterday);
     }
 
 }
